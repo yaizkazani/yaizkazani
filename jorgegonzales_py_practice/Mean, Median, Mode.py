@@ -15,24 +15,24 @@ from math import *
 
 
 def mean(mylist, digits = 10):
-    return round(reduce(lambda x, y: x + y, mylist) / len(mylist), digits)
+    return round(reduce(lambda x, y: x + y, mylist) / len(mylist), digits)  # we call for lambda using reduce and then calculate mean with required accuracy
 
 
 def mode(mylist):
     count = dict()
     ans = []
     for item in mylist:
-        count[item] = count.get(item, 0) + 1
+        count[item] = count.get(item, 0) + 1  # using dict to calculate number of occurences
     for key in count.keys():
-        if count[key] == max(count.values()):
+        if count[key] == max(count.values()):  # get digits (they are keys) that has maximum occurence number 
             ans.append(key)
     return ans
 
 
 def median(mylist):
     half_len = len(mylist) / 2
-    if half_len.is_integer():
-        half_len = int(half_len)
+    if half_len.is_integer():  # yay its not integer, but still works ^^
+        half_len = int(half_len)  # now its integer
         return mylist[half_len - 1:half_len + 1]
     else:
         return mylist[floor(half_len)]
