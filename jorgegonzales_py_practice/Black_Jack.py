@@ -89,9 +89,13 @@ def black_jack():
 	total_score = 100
 	for game_rounds in range(1, 6):  # we play 5 rounds
 		deck = deck_generator()  # we create a new deck for each round
-		hand = []
 		round_score = 0
-		print("{0:<7}{1:^13}".format("Round:", game_rounds))
+
+		hand = [draw_a_card(deck), draw_a_card(deck)]  # initial hand
+		print("Your hand is:")
+		for c in hand:
+			print(c[0])
+		print("\n{0:<7}{1:^13}".format("Round:", game_rounds))
 		while 1:  # loop for a single round
 			print("""\nThe Black Jack menu:
 			1 - Draw a card
