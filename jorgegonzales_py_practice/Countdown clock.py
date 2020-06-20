@@ -9,7 +9,6 @@
 # time.mktime(t) - преобразует кортеж или struct_time в число секунд с начала эпохи. Обратна функции time.localtime.
 # datetime.timetuple() - возвращает struct_time из datetime.
 import time
-import datetime
 
 
 def transformer(ctime):
