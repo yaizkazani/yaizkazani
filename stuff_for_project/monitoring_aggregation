@@ -1,0 +1,126 @@
+import re
+import os
+import time
+import sys
+from collections import OrderedDict
+
+log_file_path = str(os.getcwd() + "\\aggregatation_log.txt")  # setting path for a log file. Current is cwd = current working directory.
+archivation_log_file_path = str(os.getcwd() + "\\archivation_log.txt")
+arhivation_folder = str(os.getcwd() + "\\aggregation_logs_archive\\")
+log_time = time.ctime(time.time())  # setting a timestamp for the log file. Current is - current local time. You may use time.gmtime() if you like.
+
+
+# data_file_path = "/usr/openv/netbackup/bin/PARENT_END_CALLED_MONTH"  # path to data file.
+
+
+def log_cleanup(log_file_path, archivation_log_file_path):
+	print("running monitoring aggregation script log archivation")
+	print("my execution folder is: " + str(os.getcwd()))
+	try:
+		os.mkdir(arhivation_folder, mode=0o777,)
+	except:
+		print("monitoring aggregation archive directory exists")
+	log_file_size = (os.path.getsize(log_file_path) // 1024) / 1024
+	print("log file size is: " + str(log_file_size) + "MB")
+	if log_file_size > 0:
+		print("log file size exceed 50 MB, log file will be arhived, put to \\aggregation_logs_archive\\ folder. Original file will be deleted")
+		i = len(os.listdir(path=r"%s" % arhivation_folder))
+		if os.name == "nt":
+			try:
+				os.system(r"tar.exe -a -c -f %s %s" % (arhivation_folder + "archived_log" + str(i) + ".zip", log_file_path))
+			except:
+				print("archive was not created")
+			else:
+				os.system(r"del %s" % (log_file_path))
+		elif os.name == "posix":
+			try:
+				os.system(r"tar -cjf %s %s" % (arhivation_folder + "archived_log" + str(i) + ".tar.bz2", log_file_path))
+			except:
+				print("archive was not created")
+			else:
+				os.system(r"rm -f %s" % log_file_path)
+		else:
+			print("You are running script on unsupported operating system. Script will be aborted")
+			sys.exit()
+
+
+def get_failed_strings(path):
+	"""
+	:param path: - path to file
+	:return strings that doesnt have PROCESSED marker and represent failed jobs:
+	"""
+	with open(path, mode="r") as file:
+		to_process = ""
+		for string in file.readlines():
+			if "FAILED" in string and "PROCESSED" not in string and "MM" not in string:
+				to_process += string
+	return to_process
+
+
+def sort_by_policy(data):
+	"""
+	:param data: - list of strings(failed backup jobs) that should be processed
+	:return: - list grouped by policy - if different failed jobs belong to the same policy -
+	these strings are marked and will be joined within single SCOM incident
+	"""
+	result = []
+	log = []
+	for item in data.split("\n"):
+		if len(item):
+			policy = item.split()[7]  # policy to check for
+			if len(re.findall(r"\b%s\b" % re.escape(policy), data)) > 1:
+				result.append(str(item.rstrip()) + " SortByPolicy_" + str(policy) + " \n")
+				# ↑ if we find more than one strings with same policy (we assume that different customers cannot be in same policy) we add "SortByPolicy" to the string
+				log.append("\n" + "Log creation time: " + log_time + "\n" + "Following alerts will be aggregated by policy: " + policy + "\n")  # adding policy aggregation header to the log file
+				for tmp in data.split("\n"):  # looking for strings that will be aggregated in data
+					if policy in tmp:
+						log.append(tmp + " \n")  # add them to log
+			else:
+				result.append(item + "\n")
+	with open(log_file_path, mode="a") as logfile:
+		for _ in list(OrderedDict.fromkeys(log)):
+			logfile.writelines(_)
+	return result
+
+
+def sort_by_code(data):
+	"""
+	:param data - list of strings processed (or not by sort_by_policy function):
+	:return - processed list of strings. Now we look for exit code and customer match - exit code
+	aggregation works only within single customer entity:
+	"""
+	result = []
+	log = []
+	print(data)
+	for item in data:
+		if "SortByPolicy" in item:
+			result.append(item.rstrip())
+		else:
+			exit_code = item.split()[9]
+			customer = re.split("[-|_]", item.split()[7])[0]  # since policies might contain "-" or "_" we need to consider both options
+			if len(re.findall(r"\b%s\b" % re.escape(exit_code + " FAILED"), "".join(data))) > 1 and len(re.findall(r"\b%s\S*\b\s\S*\s%d\s\S*\s\S*\s\S*\s\d*\s*\n" % (re.escape(customer), int(exit_code)), "".join(data))) > 1:
+				result.append(str(item).rstrip() + " SortByExitCode_" + str(exit_code) + "_customer_" + customer)
+				# ↑ we look if there are more than 1 same exit codes in data (if not - nothing to aggregate) AND we check if there are more than one(or more - this is modified according to current
+				# situation) regular expressions mathing this pattern: customer2-policy2 INCR 2 - we look for "customer2" and "2"(after INCR) so we are sure that we count only same customer with the
+				# same exit code.
+				log.append("\n" + "Log creation time: " + log_time + "\n" + "Following alerts will be aggregated by exit code: " + exit_code + " for customer: " + customer + "\n")  # adding error code aggregation header to the log file
+				for tmp in data:
+					if len(re.findall(r"\b%s\S*\b\s\S*\s%d\s\S*\s\S*\s\S*\s\d*\s*\n" % (re.escape(customer), int(exit_code)), tmp)):  # we look for strings that match the pattern we use to mark strings for error aggregation
+						log.append(tmp.rstrip() + "\n")
+			else:
+				result.append(item.rstrip())
+	with open(log_file_path, mode="a") as logfile:  # writing log to the log file
+		for _ in list(OrderedDict.fromkeys(log)):
+			logfile.writelines(_)
+
+	for _ in result:
+		print(_)
+	return result
+
+""" TBD:
+	1. test archivation
+	2. archivation logging
+"""
+
+sort_by_code(sort_by_policy(get_failed_strings(r"C:\Users\yaizk\PycharmProjects\coursera_l2\Practice Python\Testing\testing_aggregation.txt")))
+log_cleanup(log_file_path, archivation_log_file_path)
