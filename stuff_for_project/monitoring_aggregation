@@ -4,17 +4,33 @@ import time
 import sys
 from collections import OrderedDict
 
-log_file_path = str(os.getcwd() + "\\aggregatation_log.txt")  # setting path for a log file. Current is cwd = current working directory.
-archivation_folder = str(os.getcwd() + "\\aggregation_logs_archive\\")
-archivation_log_file_path = str(archivation_folder + "archivation_log.txt")
+if os.name == "nt":
+	log_file_path = str(os.getcwd() + "\\aggregatation_log.txt")  # setting path for a log file. Current is cwd = current working directory.
+else:
+	log_file_path = str(os.getcwd() + "/aggregatation_log.txt")  # LINUX
 log_time = time.ctime(time.time())  # setting a timestamp for the log file. Current is - current local time. You may use time.gmtime() if you like.
-max_log_size = 0  # MB
 
-
+"""log_cleanup function configuration ↓"""
+if os.name == "nt":
+	archivation_folder = str(os.getcwd() + "\\aggregation_logs_archive\\")  # path to archivation folder
+else:
+	archivation_folder = str(os.getcwd() + "/aggregation_logs_archive/")  # path to archivation folder LINUX
+archivation_log_file_path = str(archivation_folder + "archivation_log.txt")  # path to archivation log
+max_log_size = 0  # arhivation threshold - if log has bigger size it will be archived (MB)
+logs = [log_file_path]   # list of logs to be processed
+############################################################################
 # data_file_path = "/usr/openv/netbackup/bin/PARENT_END_CALLED_MONTH"  # path to data file.
 
 
-def log_cleanup():
+def check_os():
+	if os.name == "nt" or os.name == "posix":
+		return True
+	else:
+		print("You are running script on unsupported operating system. Script will be aborted")
+		sys.exit()
+
+
+def log_cleanup(log):
 	"""
 	Check if log file size is below threshold. If not - archive it and delete original file
 	"""
@@ -24,46 +40,36 @@ def log_cleanup():
 		os.mkdir(archivation_folder, mode=0o777, )  # trying to create archive folder
 	except:
 		print("\n" + "Failed to create monitoring aggregation archive directory - already exists")
-	log_file_size = (os.path.getsize(log_file_path) // 1024) / 1024  # get log file size in MB
+	log_file_size = (os.path.getsize(log) // 1024) / 1024  # get log file size in MB
 	print("log file size is: " + str(log_file_size) + "MB")
 	if log_file_size > int(max_log_size):  # check size
 		print("Archivation started")
-		print("log file size exceed " + str(max_log_size) + "MB, log file will be arhived, put to \\aggregation_logs_archive\\ folder. Original file will be deleted")
-		i = len(os.listdir(path=r"%s" % archivation_folder))  # counter for archive naming
-		if os.name == "nt":  # if we're running under windows
-			win_arch_log_name = str(archivation_folder + "archived_log" + str(i) + ".tar")  # archive file name
-			print("win_arch_log_name  " + win_arch_log_name + "\n" + "log_file_path " + log_file_path)  # debug
-			try:
-				os.system(r"tar.exe -cf %s %s" % ("\"" + win_arch_log_name + "\"", "\"" + log_file_path + "\""))  # create archive
-			except:
-				print("archive was not created")
-			else:
-				with open(archivation_log_file_path, mode="a") as archlog:  # if tar didnt return error - write to log file
-					archlog.writelines(str("Archivation done on " + log_time + "\n"))
-					archlog.writelines(str("Archive path: " + win_arch_log_name) + "\n" + str("File that was archived: " + log_file_path) + "\n")
-				if os.path.exists(win_arch_log_name) and os.path.getsize(win_arch_log_name) > 1000:  # if archive file exists and has size
-					os.system(r"del %s" % ("\"" + log_file_path + "\""))
-				else:
-					print("Log file that had to be created not found ! Supposed name is: " + win_arch_log_name + " Cannot delete it")
-		elif os.name == "posix":  # same for linux
-			unix_arch_log_name = str(archivation_folder + "archived_log" + str(i) + ".tar")
-			try:
-				os.system(r"tar -cf %s %s" % ("\"" + unix_arch_log_name + "\"", "\"" + log_file_path + "\""))
-			except:
-				print("archive was not created")
-			else:
-				with open(archivation_log_file_path, mode="a") as archlog:
-					archlog.writelines(str("Archivation done on " + log_time))
-					archlog.writelines(str("Archive path: " + unix_arch_log_name) + "\n" + str("File that was archived: " + log_file_path) + "\n")
-				if os.path.exists(unix_arch_log_name) and os.path.getsize(unix_arch_log_name) > 1000:
-					os.system(r"rm -f %s" % ("\"" + log_file_path + "\""))
-				else:
-					print("Log file that had to be created not found ! Supposed name is: " + unix_arch_log_name + " Cannot delete it")
+		if os.name == "nt":
+			print("log file size exceed " + str(max_log_size) + "MB, log file will be arhived, put to \\aggregation_logs_archive\\ folder. Original file will be deleted")
 		else:
-			print("You are running script on unsupported operating system. Script will be aborted")
-			sys.exit()
+			print("log file size exceed " + str(max_log_size) + "MB, log file will be arhived, put to /aggregation_logs_archive/ folder. Original file will be deleted")
+		i = len(os.listdir(path=r"%s" % archivation_folder))  # counter for archive naming
+
+		arch_log_name = str(archivation_folder + "archived_log" + str(i) + ".tar")  # archive file name
+		print("arch_log_name  " + arch_log_name + "\n" + "log " + log)  # debug
+		try:
+			os.system(r"tar.exe -cf %s %s" % ("\"" + arch_log_name + "\"", "\"" + log + "\"")) if os.name == "nt" else os.system(r"tar -cf %s %s" % ("\"" + arch_log_name + "\"", "\"" + log + "\""))  # create archive
+		except:
+			print("archive was not created")
+		else:
+			with open(archivation_log_file_path, mode="a") as archlog:  # if tar didnt return error - write to log file
+				archlog.writelines(str("Archivation done on " + log_time + "\n"))
+				archlog.writelines(str("Archive path: " + arch_log_name) + "\n" + str("File that was archived: " + log) + "\n")
+			if os.path.exists(arch_log_name) and os.path.getsize(arch_log_name) > 1000:	 # if archive file exists and has size
+				if os.name == "nt":
+					os.system(r"del %s" % ("\"" + log + "\""))
+				elif os.name == "posix":
+					os.system(r"rm -f %s" % ("\"" + log + "\""))
+			else:
+				print("Log file that had to be created not found ! Supposed name is: " + arch_log_name + " Cannot delete it")
 	else:
-		print("Log file size is below threshold, no archivation needed ")
+		print("Log file size " + log + " is below threshold, no archivation needed ")
+
 
 def get_failed_strings(path):
 	"""
@@ -107,9 +113,9 @@ def sort_by_policy(data):
 
 def sort_by_code(data):
 	"""
-	:param data - list of strings processed (or not by sort_by_policy function):
-	:return - processed list of strings. Now we look for exit code and customer match - exit code
-	aggregation works only within single customer entity:
+	:param data: - list of strings processed (or not by sort_by_policy function)
+	:return: - processed list of strings. Now we look for exit code and customer match - exit code
+	aggregation works only within single customer entity
 	"""
 	result = []
 	log = []
@@ -153,5 +159,8 @@ def sort_by_code(data):
 	4. make initial configuration procedure with config file creation. Detect operating system, determine data file paths
 """
 
-sort_by_code(sort_by_policy(get_failed_strings(r"C:\Users\yaizk\PycharmProjects\coursera_l2\Practice Python\Testing\testing_aggregation.txt")))
-log_cleanup()
+if check_os():
+	#sort_by_code(sort_by_policy(get_failed_strings(r"C:\Users\yaizk\PycharmProjects\coursera_l2\Practice Python\Testing\testing_aggregation.txt")))
+	sort_by_code(sort_by_policy(get_failed_strings(r"/usr/aggr_test/testing_aggregation.txt")))
+	for item in logs:
+		log_cleanup(item)
