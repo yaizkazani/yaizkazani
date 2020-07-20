@@ -4,29 +4,35 @@ import time
 import sys
 from collections import OrderedDict
 
+"""Setting variables used by script"""
+log_time = time.ctime(time.time())  # setting a timestamp for the log file. Current is - current local time. You may use time.gmtime() if you like.
+data_file_path = r"/usr/aggr_test/testing_aggregation.txt"
+output_file_path = r""
+
 if os.name == "nt":
 	log_file_path = str(os.getcwd() + "\\aggregatation_log.txt")  # setting path for a log file. Current is cwd = current working directory.
-else:
+	archivation_folder = str(os.getcwd() + "\\aggregation_logs_archive\\")  # path to archivation folder
+elif os.name == "posix":
 	log_file_path = str(os.getcwd() + "/aggregatation_log.txt")  # LINUX
-log_time = time.ctime(time.time())  # setting a timestamp for the log file. Current is - current local time. You may use time.gmtime() if you like.
+	archivation_folder = str(os.getcwd() + "/aggregation_logs_archive/")  # path to archivation folder LINUX
+
+archivation_log_file_path = str(archivation_folder + "archivation_log.txt")  # path to archivation log
 
 """log_cleanup function configuration ↓"""
-if os.name == "nt":
-	archivation_folder = str(os.getcwd() + "\\aggregation_logs_archive\\")  # path to archivation folder
-else:
-	archivation_folder = str(os.getcwd() + "/aggregation_logs_archive/")  # path to archivation folder LINUX
-archivation_log_file_path = str(archivation_folder + "archivation_log.txt")  # path to archivation log
-max_log_size = 0  # arhivation threshold - if log has bigger size it will be archived (MB)
-logs = [log_file_path]   # list of logs to be processed
+
+max_log_size = 20  # arhivation threshold - if log has bigger size it will be archived (MB)
+logs = [log_file_path]   # list of logs to be processed by log_cleanup function
 ############################################################################
-# data_file_path = "/usr/openv/netbackup/bin/PARENT_END_CALLED_MONTH"  # path to data file.
 
 
-def check_os():
-	if os.name == "nt" or os.name == "posix":
+def check_env():
+	if not os.name == "nt" or os.name == "posix":
+		print("You are running script on unsupported operating system. Script will be aborted")
+		sys.exit()
+	if os.path.exists(data_file_path):
 		return True
 	else:
-		print("You are running script on unsupported operating system. Script will be aborted")
+		print("Data file not found, path is: ", data_file_path)
 		sys.exit()
 
 
@@ -146,21 +152,13 @@ def sort_by_code(data):
 	with open(log_file_path, mode="a") as logfile:  # writing log to the log file
 		for _ in list(OrderedDict.fromkeys(log)):
 			logfile.writelines(_)
+	with open(output_file_path, mode="a") as outfile:
+		for _ in result:
+			outfile.writelines(_)
 
-	for _ in result:
-		print(_)
-	return result
 
-
-""" TBD:
-	1. test archivation
-	2. Maybe? extend arch logging so it will know file name + size ?
-	3. comments
-	4. make initial configuration procedure with config file creation. Detect operating system, determine data file paths
-"""
-
-if check_os():
+if check_env():
 	#sort_by_code(sort_by_policy(get_failed_strings(r"C:\Users\yaizk\PycharmProjects\coursera_l2\Practice Python\Testing\testing_aggregation.txt")))
-	sort_by_code(sort_by_policy(get_failed_strings(r"/usr/aggr_test/testing_aggregation.txt")))
+	sort_by_code(sort_by_policy(get_failed_strings(data_file_path)))
 	for item in logs:
 		log_cleanup(item)
