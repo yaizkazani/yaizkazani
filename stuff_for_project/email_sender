@@ -1,0 +1,73 @@
+def send_email(to_emails, subject, body_text="", cc_emails=[""], att_file_path=""):
+	import smtplib
+	import os
+	import configparser
+	import sys
+	from email import encoders
+	from email.mime.text import MIMEText
+	from email.mime.base import MIMEBase
+	from email.mime.multipart import MIMEMultipart
+	from email.utils import formatdate
+
+	config_file_name = "config.ini"
+	config_file_path = os.path.dirname(os.path.abspath(__file__)) + f"\{config_file_name}"
+
+	######################################################################################
+
+	if not os.path.exists(config_file_path):
+		print("Config file not found, exiting")
+		sys.exit(1)
+	else:
+		conf = configparser.ConfigParser()
+		conf.read(config_file_path)
+		try:
+			smtp_server, from_addr, password = conf.get("config", "server"), conf.get("config", "account"), conf.get("config", "password")
+		except:
+			print("Cannot read config file. Config file should look like: \n[config]\nserver = servername\naccount = accountname\npassword = password")
+			sys.exit(1)
+
+	msg = MIMEMultipart()
+	msg["From"] = from_addr
+	msg["Subject"] = subject
+	msg["Date"] = formatdate(localtime=True)
+	if body_text:
+		msg.attach(MIMEText(body_text))
+
+	msg["To"] = ", ".join(to_emails)
+	msg["cc"] = ", ".join(cc_emails)
+
+	attachment = MIMEBase("application", "octet-stream")
+	header = 'Content-Disposition', 'attachment; filename="%s"' % att_file_path
+
+	if os.path.exists(att_file_path):
+		try:
+			with open(att_file_path, mode="rb") as att_file:
+				data = att_file.read()
+				attachment.set_payload(data)
+				encoders.encode_base64(attachment)
+				attachment.add_header(*header)
+				msg.attach(attachment)
+
+		except IOError:
+			print("failed to add file", att_file_path)
+			sys.exit(1)
+
+	emails = to_emails + cc_emails
+
+	server = smtplib.SMTP(smtp_server, 587)
+	server.starttls()
+	try:
+		server.login(f"{from_addr}", f"{password}")
+	except smtplib.SMTPAuthenticationError:
+		print("Cannot login to server")
+		sys.exit(1)
+	try:
+		server.sendmail(from_addr, emails, msg.as_string())
+	except:
+		print("Cannot send email, sendmail error")
+		sys.exit(1)
+	finally:
+		server.quit()
+
+
+send_email(["yaizkazani@gmail.com"], "This is a test email from function", "test_email", att_file_path=r"C:\Users\yaizk\OneDrive\Desktop\to_delete\1.jpg")
