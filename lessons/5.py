@@ -140,6 +140,12 @@
 # print(enumerate(l))  # Чё?
 # print(*enumerate(l))  # Так то лучше ! :) Звёздочка распаковывает итерируемый объект !
 # print(*[1, 2, 3])  # Распаковали лист
+# """
+# list(), tuple()
+# """
+# t = (1, 2, 3)
+# print(list(t))
+# print(tuple(list(t)))
 # #==========================================================
 # """
 # Import, random
@@ -198,3 +204,20 @@
 # print(l)
 # print(l.pop(0))
 # print(l)
+## =============================================================================================
+#
+# """
+# .split(), "".join()
+# """
+#
+# string = "a b c d e f"
+# string2 = "a_b_c_d_e_f"
+# list_to_join = [1, 2, 3, 4, 5]
+#
+# print(string.split())
+# print(string2.split())
+# print(string2.split("_"))
+# print("".join(map(str, list_to_join)))
+# print(*map(lambda x: x ** 2, list_to_join))
+#
+# print(list(map(int, input().split())))
