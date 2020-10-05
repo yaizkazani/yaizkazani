@@ -186,13 +186,9 @@ if pathlib.Path.exists(pathlib.Path(r"homework_data.py")):
 with open("homework_data.py", mode="w") as homework_data_file:  # overwriting our dictionary with homework data to file
     homework_data_file.write("data=" + pprint.pformat(homework_data))
 
-##### TODO DEBUG
-
-students_dict = {"Student1": ["yaizkazani@gmail.com"],
-                 "Student2": ["yaizkazani@gmail.com"],
-                 "Student3": ["yaizkazani@gmail.com"],
-                 "Student5": ["yaizkazani@gmail.com"],
-                 }
+# ##### TODO DEBUG
+#
+# students_dict = 
 
 for student in students_dict.keys():
     homework_excel_path = preparing_stats(student, homework_data)  # we get cumulative homework results for each student, write them to .xlsx file
@@ -215,4 +211,4 @@ pprint.pprint(homework_data)  # debug
 for student in students_dict.keys():  # prepare paths, send out files as letter's attachments
     student_hw_file_path = list(pathlib.Path(f"homework{lesson_ended}").glob(f"*{student}*"))[0]
     homework_file_path = pathlib.Path.joinpath(pathlib.Path(r"homework_repo"), rf"{lesson_ended + 1}.txt")
-    email.send_email(students_dict[student], subject=f"Hello {student}, here is your stats and homework", body_text=f"Demo file link:\n https://github.com/yaizkazani/yaizkazani/blob/master/lessons/{lesson_ended + 1}.py", att_file=[rf"{homework_file_path}", rf"{student_hw_file_path}"])
+    email.send_email(students_dict[student], subject=f"Hello mr.{student}, here is your stats and homework", body_text=f"Demo file link:\n https://github.com/yaizkazani/yaizkazani/blob/master/lessons/{lesson_ended + 1}.py", att_file=[rf"{homework_file_path}", rf"{student_hw_file_path}"])
