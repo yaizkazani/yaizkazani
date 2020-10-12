@@ -192,14 +192,7 @@ with open("homework_data.py", mode="w") as homework_data_file:  # overwriting ou
 
 # ##### TODO DEBUG
 
-# students_dict = {"Chiklenerov": ["aleksandr.chiklenerov.gdc@ts.fujitsu.com"]}
-# students_dict = {"Sadykov": ["yaizkazani@gmail.com"],
-#                  "Larionov": ["yaizkazani@gmail.com"],
-#                  "Gatiyatullin": ["yaizkazani@gmail.com"],
-#                  "Gainutdinov": ["yaizkazani@gmail.com"],
-#                  "chiklenerov": ["yaizkazani@gmail.com"]
-#                  }
-
+# This part was removed since it contains emails
 
 for student in students_dict.keys():
     homework_excel_path = preparing_stats(student, homework_data)  # we get cumulative homework results for each student, write them to .xlsx file
