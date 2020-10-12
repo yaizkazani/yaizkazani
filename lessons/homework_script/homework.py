@@ -1,4 +1,4 @@
-import ezsheets, os, pathlib, pprint, smtplib, shutil, sys, openpyxl, logging, send2trash
+import ezsheets, os, pathlib, pprint, re, shutil, sys, openpyxl, logging, send2trash
 import Email_sender_v2_attachments as email
 from openpyxl.styles import Alignment
 
@@ -40,12 +40,16 @@ def preparing_stats(student_name, homework_data):
     #         'Student3-lesson2': [['3', '6'], ['2']],
     #         'Student4-lesson2': [['2', '3', '4'], ['']]}
 
-    #  Gathering data for student
-    if not student_name in str(homework_data.keys()):  # checking if homework data exist for our student
+    cyrillic_check = re.findall(u"[\u0400-\u0500]+", student_name)
+    if cyrillic_check:
+        sys.exit(f"Incorrect letters in {student_name} name: {cyrillic_check}")
+
+    if not student_name.lower() in str(homework_data.keys()).lower():  # checking if homework data exist for our student
         return pathlib.Path(f"Empty_hw-{student_name}.xlsx")
 
+    #  Gathering data for student
     for key in homework_data.keys():  # we go through keys and
-        if student_name in key:  # look if key belongs to our student
+        if student_name.lower() in str(key).lower():  # look if key belongs to our student
             lesson_number = str(key)[-1:]
             student_data[lesson_number] = {"mandatory": homework_data[key][0],
                                            "optional": homework_data[key][1] if len(homework_data[
@@ -187,8 +191,15 @@ with open("homework_data.py", mode="w") as homework_data_file:  # overwriting ou
     homework_data_file.write("data=" + pprint.pformat(homework_data))
 
 # ##### TODO DEBUG
-#
-# students_dict = 
+
+# students_dict = {"Chiklenerov": ["aleksandr.chiklenerov.gdc@ts.fujitsu.com"]}
+# students_dict = {"Sadykov": ["yaizkazani@gmail.com"],
+#                  "Larionov": ["yaizkazani@gmail.com"],
+#                  "Gatiyatullin": ["yaizkazani@gmail.com"],
+#                  "Gainutdinov": ["yaizkazani@gmail.com"],
+#                  "chiklenerov": ["yaizkazani@gmail.com"]
+#                  }
+
 
 for student in students_dict.keys():
     homework_excel_path = preparing_stats(student, homework_data)  # we get cumulative homework results for each student, write them to .xlsx file
