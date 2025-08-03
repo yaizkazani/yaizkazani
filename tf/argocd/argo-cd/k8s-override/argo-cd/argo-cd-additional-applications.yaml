@@ -1,0 +1,33 @@
+%{ for key in additional_apps ~}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ${key.name}
+  namespace: ${app_name}
+  labels:
+    scope: system
+%{ if finalizers != "" ~}
+  finalizers:
+%{ for final in finalizers ~}
+  - ${final}
+%{ endfor ~}
+%{ endif ~}
+spec:
+  destination:
+    namespace: ${app_name}
+    server: https://kubernetes.default.svc
+  project: ${key.project}
+  source:
+    path: ${key.path}
+    repoURL: ${key.repoURL}
+    targetRevision: ${key.targetRevision}
+%{ if key.recurse == "true" ~}
+    directory:
+      recurse: true
+%{ endif ~}
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+%{ endfor ~}

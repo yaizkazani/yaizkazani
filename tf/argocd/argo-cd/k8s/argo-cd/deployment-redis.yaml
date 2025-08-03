@@ -1,0 +1,17 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argocd-redis
+spec:
+  template:
+    spec:
+      containers:
+      - name: redis
+        resources:
+          limits:
+            cpu: ${resources.redis.limits.cpu}
+            memory: ${resources.redis.limits.memory}
+          requests:
+            cpu: ${resources.redis.requests.cpu}
+            memory: ${resources.redis.requests.memory}

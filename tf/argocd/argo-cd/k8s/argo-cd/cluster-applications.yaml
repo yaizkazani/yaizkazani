@@ -1,0 +1,29 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cluster-applications
+  namespace: ${app_name}
+  labels:
+    scope: system
+%{ if finalizers != "" ~}
+  finalizers:
+%{ for final in finalizers ~}
+  - ${final}
+%{ endfor ~}
+%{ endif ~}
+spec:
+  destination:
+    namespace: ${app_name}
+    server: https://kubernetes.default.svc
+  project: default
+  source:
+    path: ${app_repo_path}
+    repoURL: ${app_repo}
+    targetRevision: HEAD
+%{ if cluster_apps_recurse ~}
+    directory:
+      recurse: true
+%{ endif ~}
+  syncPolicy:
+    automated: {}
